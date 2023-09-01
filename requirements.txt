@@ -1,0 +1,8 @@
+cvzone==1.5.6
+numpy==1.25.2
+opencv-python-headless==4.8.0.76
+PyQt5==5.15.9
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.12.2
+pyqtgraph==0.13.3
+scipy==1.11.2

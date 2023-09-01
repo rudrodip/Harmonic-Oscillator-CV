@@ -87,7 +87,7 @@ $$
 following is the equation that I'm using for circle residual
 
 $$
-sqrt{(x - a)^2 + (y - b)^2} - r
+\sqrt{(x - a)^2 + (y - b)^2} - r
 $$
 
 ## Parameter Estimation

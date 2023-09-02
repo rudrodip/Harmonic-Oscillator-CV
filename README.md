@@ -113,23 +113,77 @@ The application captures video frames, detects the object in each frame, and col
 
 SciPy's curve fitting functions are used to fit the collected data to a damped oscillation function. This step helps extract parameters like amplitude, frequency, damping coefficient, phase and a constant.
 
-following is the equation that I'm using for the under-damped oscillation function
+Equation for the under-damped oscillation function
 
 $$
 x(t) = A e^{-\gamma t} \cos(2\pi f t + \phi) + C
 $$
 
-following is the equation that I'm using for decaying oscillation component
+```py
+def underdamped_harmonic_oscillator(t, A, gamma, f, phi, C):
+    """
+    Calculate the position of an underdamped harmonic oscillator at time t.
+
+    Args:
+        t: Time values.
+        A: Amplitude of oscillation.
+        gamma: Damping coefficient.
+        f: Frequency of oscillation.
+        phi: Phase angle.
+        C: Constant offset.
+
+    Returns:
+        Position values at the given time points.
+    """
+    return A * np.exp(-gamma * t) * np.cos(2 * np.pi * f * t + phi) + C
+```
+
+Equation for decaying oscillation component
 
 $$
 x(t) = C \pm A e^{-\gamma t}
 $$
 
-following is the equation that I'm using for circle residual
+```py
+def upper_decaying_component_curve(t, A, gamma, C):
+    """
+    Calculate the upper decaying component of a curve at time t.
+
+    Args:
+        t: Time values.
+        A: Amplitude of decay.
+        gamma: Decay rate.
+        C: Constant offset.
+
+    Returns:
+        Value of the upper decaying component at the given time points.
+    """
+    return C + A * np.exp(-gamma * t)
+```
+
+Equation for circle residual
 
 $$
 \sqrt{(x - a)^2 + (y - b)^2} - r
 $$
+
+```py
+def circle_residuals(params, x, y):
+    """
+    Calculate the residuals for circle fitting.
+
+    Args:
+        params: Parameters of the circle (a, b, r).
+        x: x-coordinates of data points.
+        y: y-coordinates of data points.
+
+    Returns:
+        Residuals indicating the difference between the data points and the circle model.
+    """
+    a, b, r = params
+    return np.sqrt((x - a) ** 2 + (y - b) ** 2) - r
+
+```
 
 ## Parameter Estimation
 

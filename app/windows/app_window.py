@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QInputDialog,
     QHBoxLayout,
-    QSplitter
+    QSplitter,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QColor
@@ -20,22 +20,46 @@ import numpy as np
 from scipy.optimize import curve_fit
 from processing.video_thread import VideoThread
 from windows.hsv_slider import HSVSlider
-from windows.analyze_window import AnalyzeWindow
-from utils.utils import underdamped_harmonic_oscillator, upper_decaying_component_curve, lower_decaying_component_curve
-
-postion_plot_color = QColor(3, 252, 194)
-fitted_plot_color = QColor(255, 127, 80)
+from windows.analyze_widget import AnalyzeWidget
+from utils.utils import (
+    underdamped_harmonic_oscillator,
+    upper_decaying_component_curve,
+    lower_decaying_component_curve,
+)
 
 
 class AppWindow(QWidget):
     def __init__(self):
         super().__init__()
+
+        # Constants
+        self.postion_plot_color = QColor(3, 252, 194)
+        self.fitted_plot_color = QColor(255, 127, 80)
+
+        # Initialize attributes
         self.setWindowTitle("Harmonic Oscillator")
         self.disply_width = 1280
         self.display_height = 720
         self.video_path = None
         self.initial_guess = [1.0, 0.1, 1.0, 0.0, 0.0]
+        self.data_points = []
+        self.thread = None
+        self.selected_display_option = "Main Video"
+        self.selected_mask_option = "Color Detection"
+        self.draw_params = True
 
+        # Create UI components
+        self.create_buttons()
+        self.create_labels()
+        self.create_graph_layout()
+        self.create_hsv_slider()
+        self.create_analyze_widget()
+
+        # Set up the main layout
+        self.create_layout()
+        self.setFixedWidth(self.disply_width)
+
+    def create_buttons(self):
         # "Run" button
         self.run_button = QPushButton("Run", self)
         self.run_button.clicked.connect(self.start_video_thread)
@@ -62,29 +86,19 @@ class AppWindow(QWidget):
         self.url_button = QPushButton("URL", self)
         self.url_button.clicked.connect(self.url_submission)
 
-        # dropdown selection -  display options
+        # Dropdown selection - display options
         self.display_options = QComboBox(self)
-        self.display_options.addItem("Main Video")
-        self.display_options.addItem("Image Contours")
-        self.display_options.addItem("Mask")
+        self.display_options.addItems(["Main Video", "Image Contours", "Mask"])
         self.display_options.currentTextChanged.connect(self.display_selection_changed)
 
-        # dropdown selection -  mask options
+        # Dropdown selection - mask options
         self.mask_options = QComboBox(self)
-        self.mask_options.addItem("Color Detection")
-        self.mask_options.addItem("Edge Detection")
-        self.mask_options.addItem("Circle Detection")
+        self.mask_options.addItems(
+            ["Color Detection", "Edge Detection", "Circle Detection"]
+        )
         self.mask_options.currentTextChanged.connect(self.mask_selection_changed)
 
-        # HSVSlider
-        self.hsv_slider = HSVSlider(self)
-        self.hsv_slider.setEnabled(False)
-
-        # Analyze widget
-        self.analyze_widget = AnalyzeWindow(self)
-        self.analyze_widget.analyze_signal.connect(self.fit_data_point)
-        self.analyze_widget.setEnabled(False)
-
+    def create_labels(self):
         # QLabel with the text "Video"
         self.video_label = QLabel("No video selected", self)
         self.video_label.setAlignment(Qt.AlignCenter)
@@ -92,21 +106,22 @@ class AppWindow(QWidget):
             "font-size: 24px; background-color: black; color: white;"
         )
 
-        # graph layout widget for PyQtGraph
+    def create_graph_layout(self):
         self.graph_layout = pg.GraphicsLayoutWidget()
-        # self.graph_layout.setMinimumSize(int(self.disply_width), self.display_height)
         self.plot = self.graph_layout.addPlot(title="Position v/s time plot")
         self.plot.showGrid(x=True, y=True)
         self.plot.addLegend()
         self.plot.setLabel("left", "X position of BOB")
         self.plot.setLabel("bottom", "Time")
 
+        # Initialize plots
+
         # position vs time plot
         self.position_plot_data = self.plot.plot(
-            pen=pg.mkPen(color=postion_plot_color, width=3),
+            pen=pg.mkPen(color=self.postion_plot_color, width=3),
             symbol="o",
             symbolPen="b",
-            symbolBrush=postion_plot_color,
+            symbolBrush=self.postion_plot_color,
             symbolSize=3,
             name="Actual Position",
         )
@@ -116,14 +131,13 @@ class AppWindow(QWidget):
 
         # curve fit plot
         self.fitted_plot_data = self.plot.plot(
-            pen=pg.mkPen(color=fitted_plot_color, width=3, style=Qt.DashLine),
+            pen=pg.mkPen(color=self.fitted_plot_color, width=3, style=Qt.DashLine),
             name="Fitted Curve",
         )
-        
+
         # upper decaying component curve plot
         self.upper_decay_plot = self.plot.plot(
             pen=pg.mkPen(color="g", width=2, style=Qt.DashLine),
-            name="Decay Curve",
         )
 
         # lower decaying component curve plot
@@ -132,10 +146,19 @@ class AppWindow(QWidget):
             name="Decay Curve",
         )
 
-        # Create a grid layout
-        grid_layout = QGridLayout()
+    def create_hsv_slider(self):
+        # HSVSlider
+        self.hsv_slider = HSVSlider(self)
+        self.hsv_slider.setEnabled(False)
 
-        # Buttons and dropdowns in the top row
+    def create_analyze_widget(self):
+        # Analyze widget
+        self.analyze_widget = AnalyzeWidget(self)
+        self.analyze_widget.analyze_signal.connect(self.fit_data_point)
+        self.analyze_widget.setEnabled(False)
+
+    def create_layout(self):
+        # Create layouts for buttons
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.run_button)
         button_layout.addWidget(self.stop_button)
@@ -151,18 +174,23 @@ class AppWindow(QWidget):
         video_graph_splitter.addWidget(self.video_label)
         video_graph_splitter.addWidget(self.graph_layout)
 
-        # Set stretch factors for video and graph (30% for video, 70% for graph)
-        video_graph_splitter.setSizes([int(self.display_height * 0.4), int(self.display_height * 0.7)])
+        # Set stretch factors for video and graph (40% for video, 60% for graph)
+        video_graph_splitter.setSizes(
+            [int(self.display_height * 0.4), int(self.display_height * 0.6)]
+        )
 
         # Create a vertical splitter for the third row (HSV Slider and Analyze widget)
         slider_analyze_splitter = QSplitter(Qt.Horizontal)
         slider_analyze_splitter.addWidget(self.hsv_slider)
         slider_analyze_splitter.addWidget(self.analyze_widget)
 
-        # Set stretch factors for slider and analyzer (30% for slider, 70% for analyzer)
-        slider_analyze_splitter.setSizes([int(self.display_height * 0.4), int(self.display_height * 0.7)])
+        # Set stretch factors for slider and analyzer (40% for slider,60% for analyzer)
+        slider_analyze_splitter.setSizes(
+            [int(self.display_height * 0.4), int(self.display_height * 0.6)]
+        )
 
-        # Add layouts to grid layout
+        # Create a grid layout
+        grid_layout = QGridLayout()
         grid_layout.addLayout(button_layout, 0, 0)
         grid_layout.addWidget(video_graph_splitter, 1, 0)
         grid_layout.addWidget(slider_analyze_splitter, 2, 0)
@@ -174,14 +202,6 @@ class AppWindow(QWidget):
 
         # Set the grid layout as the main widget's layout
         self.setLayout(grid_layout)
-
-        # video capture thread
-        self.data_points = []
-        self.thread = None
-        self.selected_display_option = "Main Video"
-        self.selected_mask_option = "Color Detection"
-        self.draw_params = True
-        self.setFixedWidth(self.disply_width)
 
     @pyqtSlot()
     def url_submission(self):
@@ -209,19 +229,15 @@ class AppWindow(QWidget):
 
     @pyqtSlot()
     def draw_param_selection(self):
-        if self.draw_params:
-            self.draw_params = False
-            self.draw_param_button.setText("Draw Params")
-        else:
-            self.draw_params = True
-            self.draw_param_button.setText("Hide Param")
+        self.draw_params = not self.draw_params
+        self.draw_param_button.setText(
+            "Hide Param" if self.draw_params else "Draw Params"
+        )
 
     @pyqtSlot()
     def select_video_file(self):
-        if (
-            self.thread is None
-            or not self.thread.isRunning()
-            and self.video_path is not None
+        if self.thread is None or (
+            not self.thread.isRunning() and self.video_path is not None
         ):
             options = QFileDialog.Options()
             options |= QFileDialog.ReadOnly
@@ -279,6 +295,26 @@ class AppWindow(QWidget):
             self.thread.stop()
             event.accept()
 
+    def update_button_states(self, running):
+        """
+        Update the enabled/disabled state of buttons and widgets based on whether
+        the video thread is running or not.
+
+        Args:
+            running (bool): True if the video thread is running, False otherwise.
+        """
+        self.run_button.setEnabled(not running)
+        self.select_file_button.setEnabled(not running)
+        self.webcam_button.setEnabled(not running)
+        self.display_options.setEnabled(not running)
+        self.mask_options.setEnabled(not running)
+        self.url_button.setEnabled(not running)
+        self.draw_param_button.setEnabled(not running)
+        self.analyze_widget.setEnabled(not running)
+
+        self.stop_button.setEnabled(running)
+        self.hsv_slider.setEnabled(running)
+
     def start_video_thread(self):
         if (
             self.thread is None
@@ -291,7 +327,7 @@ class AppWindow(QWidget):
                 mask_option=self.selected_mask_option,
                 draw_params=self.draw_params,
             )
-            # clearing all data and plot before running
+            # Clear all data and plots before running
             self.data_points.clear()
             self.position_plot_data.clear()
             self.fitted_plot_data.clear()
@@ -303,32 +339,12 @@ class AppWindow(QWidget):
             self.hsv_slider.slider_values_signal.connect(self.thread.update_hsv_range)
 
             self.thread.start()
-            self.analyze_widget.setEnabled(False)
-            self.run_button.setEnabled(False)
-            self.select_file_button.setEnabled(False)
-            self.webcam_button.setEnabled(False)
-            self.display_options.setEnabled(False)
-            self.mask_options.setEnabled(False)
-            self.url_button.setEnabled(False)
-            self.draw_param_button.setEnabled(False)
-
-            self.stop_button.setEnabled(True)
-            self.hsv_slider.setEnabled(True)
+            self.update_button_states(running=True)
 
     def stop_video_thread(self):
         if self.thread and self.thread.isRunning():
             self.thread.stop()
-            self.run_button.setEnabled(True)
-            self.select_file_button.setEnabled(True)
-            self.webcam_button.setEnabled(True)
-            self.display_options.setEnabled(True)
-            self.mask_options.setEnabled(True)
-            self.url_button.setEnabled(True)
-            self.draw_param_button.setEnabled(True)
-            self.analyze_widget.setEnabled(True)
-
-            self.stop_button.setEnabled(False)
-            self.hsv_slider.setEnabled(False)
+        self.update_button_states(running=False)
 
     def display_selection_changed(self, selected_option):
         self.selected_display_option = selected_option
@@ -337,17 +353,7 @@ class AppWindow(QWidget):
         self.selected_mask_option = selected_option
 
     def video_thread_finished(self):
-        self.run_button.setEnabled(True)
-        self.select_file_button.setEnabled(True)
-        self.webcam_button.setEnabled(True)
-        self.display_options.setEnabled(True)
-        self.mask_options.setEnabled(True)
-        self.url_button.setEnabled(True)
-        self.draw_param_button.setEnabled(True)
-        self.analyze_widget.setEnabled(True)
-
-        self.stop_button.setEnabled(False)
-        self.hsv_slider.setEnabled(False)
+        self.update_button_states(False)
 
     def fit_data_point(self):
         x_data = np.array(self.data_points)[:, 0]
@@ -355,7 +361,9 @@ class AppWindow(QWidget):
 
         # Perform the curve fitting
         initial_guess = [1.0, 0.1, 1.0, 0.0, 0.0]
-        params, params_covariance = curve_fit(underdamped_harmonic_oscillator, x_data, y_data, p0=initial_guess)
+        params, _ = curve_fit(
+            underdamped_harmonic_oscillator, x_data, y_data, p0=initial_guess
+        )
 
         # Extract the fitted parameters
         A, gamma, f, phi, C = params
@@ -363,7 +371,11 @@ class AppWindow(QWidget):
             x=x_data, y=underdamped_harmonic_oscillator(x_data, A, gamma, f, phi, C)
         )
 
-        self.upper_decay_plot.setData(x=x_data, y=upper_decaying_component_curve(x_data, A, gamma, C))
-        self.lower_decay_plot.setData(x=x_data, y=lower_decaying_component_curve(x_data, A, gamma, C))
+        self.upper_decay_plot.setData(
+            x=x_data, y=upper_decaying_component_curve(x_data, A, gamma, C)
+        )
+        self.lower_decay_plot.setData(
+            x=x_data, y=lower_decaying_component_curve(x_data, A, gamma, C)
+        )
 
         self.analyze_widget.update_params(params)

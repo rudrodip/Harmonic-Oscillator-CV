@@ -10,7 +10,8 @@ This Python project is designed to analyze the harmonic oscillation of an object
   - [Overview](#overview)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
+  - [Setting Up a Virtual Environment](#setting-up-a-virtual-environment)
+  - [Installing Dependencies](#installing-dependencies)
   - [Usage](#usage)
   - [Object Detection](#object-detection)
   - [Data Collection](#data-collection)
@@ -22,22 +23,62 @@ This Python project is designed to analyze the harmonic oscillation of an object
 
 ## Prerequisites
 
-Ensure you have the following libraries installed:
+Before you begin, ensure you have met the following requirements:
 
-- python3 environment
+- Python 3.6 or higher installed on your system. You can download Python from [python.org](https://www.python.org/downloads/).
+- [Git](https://git-scm.com/) installed (optional, but recommended for cloning the repository).
 
-## Installation
+## Setting Up a Virtual Environment
 
-1. Clone this repository to your local machine:
+It's a good practice to work within a virtual environment to isolate your project's dependencies. Here's how to set up and activate a virtual environment:
+
+1. Open a terminal or command prompt.
+
+2. Clone this repository to your local machine:
 
 ```bash
 git clone https://github.com/rudrodip/Harmonic-Oscillator-CV
-cd Harmonic-Oscillator-CV
 ```
 
-2. Install the required libraries (see Prerequisites).
+3. Navigate to your project directory:
+
 ```bash
-pip install -r requirements.txt
+ cd Harmonic-Oscillator-CV
+```
+
+4. Create a virtual environment (replace `venv` with your preferred name):
+
+```bash
+  python -m venv venv
+```
+
+5. Activate the virtual environment:
+
+  - On Windows:
+
+```bash
+  venv\Scripts\activate
+```
+
+  - On macOS and Linux:
+
+```bash
+  source venv/bin/activate
+```
+
+6. Your terminal prompt should now show the name of the virtual environment, indicating that it's active.
+
+
+## Installing Dependencies
+
+Once you have your virtual environment set up and activated, you can install the project's dependencies:
+
+1. Make sure you are in your project directory with the activated virtual environment.
+
+2. Install the dependencies from the `requirements.txt` file:
+
+```bash
+   pip install -r requirements.txt
 ```
 
 ## Usage
@@ -45,7 +86,7 @@ pip install -r requirements.txt
 1. Run the main application script:
 
 ```bash
-python app.py
+python app/app.py
 ```
 
 2. Use the GUI to configure object detection settings and start the analysis.

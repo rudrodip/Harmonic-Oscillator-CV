@@ -113,6 +113,7 @@ class AnalyzeWidget(QWidget):
         )
         length_pivot_to_sur = length - (length / ratio)
         self.length_pivot_to_surface_value_label.setText(f"{length_pivot_to_sur:.4f} m")
+        self.radius_value_label.setText(f"{length - length_pivot_to_sur:.4f} m")
 
     def save_params(self):
         A, gamma, w, phi, C = self.params

@@ -1,3 +1,4 @@
+import os
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QLabel,
@@ -8,7 +9,10 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
-from utils.utils import load_json, save_json
+from utils.utils import load_json, save_json, get_project_root
+
+project_root = get_project_root(os.path.dirname(os.path.abspath(__file__)))
+data_folder = os.path.join(project_root, 'data')
 
 class HSVSlider(QWidget):
     slider_values_signal = pyqtSignal(int, int, int, int, int, int)
@@ -20,9 +24,8 @@ class HSVSlider(QWidget):
     def initUI(self):
         # Load HSV values from JSON
         try:
-            hsv_values = load_json("hsv.json")
-        except Exception as e:
-            print(e)
+            hsv_values = load_json(os.path.join(data_folder, "json", "hsv.json"))
+        except:
             hsv_values = {"hmin": 77, "hmax": 179, "smin": 45, "smax": 255, "vmin": 0, "vmax": 255}
 
         # Create sliders, labels, and value labels
@@ -86,7 +89,7 @@ class HSVSlider(QWidget):
 
     def save_hsv(self):
         hsv_values = {name: slider.value() for name, slider in self.sliders.items()}
-        save_json('hsv.json', hsv_values)
+        save_json(os.path.join(data_folder, "json", "hsv.json"), hsv_values)
 
         message_box = QMessageBox()
         message_box.setWindowTitle("HSV Values")

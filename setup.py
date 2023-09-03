@@ -1,8 +1,7 @@
 from setuptools import setup, find_packages
 
-# Project metadata
 name = "Harmonic Oscillator CV"
-version = "0.0.2"  # Replace with your project version
+version = "0.0.2"
 description = "This Python project is designed to analyze the harmonic oscillation of an object using computer vision techniques."
 author = "Rudrodip Sarker"
 author_email = "official.rudrodipsarker@gmail.com"

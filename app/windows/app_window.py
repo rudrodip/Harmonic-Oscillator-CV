@@ -26,6 +26,7 @@ from utils.utils import (
     upper_decaying_component_curve,
     lower_decaying_component_curve,
 )
+from utils.contansts import lower_bounds, upper_bounds, initial_guess
 
 
 class AppWindow(QWidget):
@@ -44,7 +45,7 @@ class AppWindow(QWidget):
         self.initial_guess = [1.0, 0.1, 1.0, 0.0, 0.0]
         self.data_points = []
         self.thread = None
-        self.selected_display_option = "Main Video"
+        self.selected_display_option = "Image Contours"
         self.selected_mask_option = "Color Detection"
         self.draw_params = True
 
@@ -58,6 +59,7 @@ class AppWindow(QWidget):
         # Set up the main layout
         self.create_layout()
         self.setFixedWidth(self.disply_width)
+        self.showMaximized()
 
     def create_buttons(self):
         # "Run" button
@@ -88,7 +90,7 @@ class AppWindow(QWidget):
 
         # Dropdown selection - display options
         self.display_options = QComboBox(self)
-        self.display_options.addItems(["Main Video", "Image Contours", "Mask"])
+        self.display_options.addItems(["Image Contours", "Main Video", "Mask"])
         self.display_options.currentTextChanged.connect(self.display_selection_changed)
 
         # Dropdown selection - mask options
@@ -108,15 +110,15 @@ class AppWindow(QWidget):
 
     def create_graph_layout(self):
         self.graph_layout = pg.GraphicsLayoutWidget()
-        self.plot = self.graph_layout.addPlot(title="Position v/s time plot")
+        self.plot = self.graph_layout.addPlot(title="Position v/s frame plot")
         self.plot.showGrid(x=True, y=True)
         self.plot.addLegend()
         self.plot.setLabel("left", "X position of BOB")
-        self.plot.setLabel("bottom", "Time")
+        self.plot.setLabel("bottom", "frame")
 
         # Initialize plots
 
-        # position vs time plot
+        # position vs frame plot
         self.position_plot_data = self.plot.plot(
             pen=pg.mkPen(color=self.postion_plot_color, width=3),
             symbol="o",
@@ -131,18 +133,18 @@ class AppWindow(QWidget):
 
         # curve fit plot
         self.fitted_plot_data = self.plot.plot(
-            pen=pg.mkPen(color=self.fitted_plot_color, width=3, style=Qt.DashLine),
+            pen=pg.mkPen(color=self.fitted_plot_color, width=3),
             name="Fitted Curve",
         )
 
         # upper decaying component curve plot
         self.upper_decay_plot = self.plot.plot(
-            pen=pg.mkPen(color="g", width=2, style=Qt.DashLine),
+            pen=pg.mkPen(color="g", width=1),
         )
 
         # lower decaying component curve plot
         self.lower_decay_plot = self.plot.plot(
-            pen=pg.mkPen(color="g", width=2, style=Qt.DashLine),
+            pen=pg.mkPen(color="g", width=1),
             name="Decay Curve",
         )
 
@@ -257,6 +259,10 @@ class AppWindow(QWidget):
                 self.video_label.adjustSize()
                 self.run_button.setEnabled(True)
 
+    @pyqtSlot(int)
+    def processing_frame(self, count):
+        self.video_label.setText(f"Loading: {count}%")
+
     @pyqtSlot(np.ndarray)
     def update_image(self, cv_img):
         """Updates the image_label with a new opencv image"""
@@ -269,9 +275,9 @@ class AppWindow(QWidget):
         self.video_label.setPixmap(qt_img.scaled(scaled_size, Qt.KeepAspectRatio))
 
     @pyqtSlot(float, float)
-    def update_graph(self, time, cx):
+    def update_graph(self, frame, cx):
         if self.thread and self.thread.isRunning():
-            self.data_points.append((time, cx))
+            self.data_points.append((frame, cx))
             if len(self.data_points) != 0:
                 x_data = np.array(self.data_points)[:, 0]
                 y_data = np.array(self.data_points)[:, 1]
@@ -331,11 +337,14 @@ class AppWindow(QWidget):
             self.data_points.clear()
             self.position_plot_data.clear()
             self.fitted_plot_data.clear()
+            self.upper_decay_plot.clear()
+            self.lower_decay_plot.clear()
 
             self.thread.finished_signal.connect(self.video_thread_finished)
             self.thread.change_pixmap_signal.connect(self.update_image)
             self.thread.new_contour_signal.connect(self.update_graph)
             self.thread.parameter_signal.connect(self.analyze_widget.show_params)
+            self.thread.processing_signal.connect(self.processing_frame)
             self.hsv_slider.slider_values_signal.connect(self.thread.update_hsv_range)
 
             self.thread.start()
@@ -356,19 +365,24 @@ class AppWindow(QWidget):
         self.update_button_states(False)
 
     def fit_data_point(self):
-        x_data = np.array(self.data_points)[:, 0]
-        y_data = np.array(self.data_points)[:, 1]
+        data = np.array(self.data_points)
+        x_data = data[:, 0]
+        y_data = data[:, 1]
 
-        # Perform the curve fitting
-        initial_guess = [1.0, 0.1, 1.0, 0.0, 0.0]
         params, _ = curve_fit(
-            underdamped_harmonic_oscillator, x_data, y_data, p0=initial_guess
+            underdamped_harmonic_oscillator,
+            x_data,
+            y_data,
+            p0=initial_guess,
+            bounds=(lower_bounds, upper_bounds),
+            maxfev=2500,
+            ftol=1e-6,
         )
 
         # Extract the fitted parameters
-        A, gamma, f, phi, C = params
+        A, gamma, w, phi, C = params
         self.fitted_plot_data.setData(
-            x=x_data, y=underdamped_harmonic_oscillator(x_data, A, gamma, f, phi, C)
+            x=x_data, y=underdamped_harmonic_oscillator(x_data, A, gamma, w, phi, C)
         )
 
         self.upper_decay_plot.setData(

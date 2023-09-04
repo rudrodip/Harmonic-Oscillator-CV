@@ -4,10 +4,15 @@
 
 This Python project is designed to analyze the harmonic oscillation of an object using computer vision techniques. It leverages various libraries, including OpenCV for video feed processing, SciPy for data analysis, NumPy for numerical operations, and PyQt5 for creating a graphical user interface (GUI). The project detects and tracks an object in a video feed, extracts its motion data, fits it to a damped oscillation function, and calculates physical parameters such as pendulum length and pivot point location.
 
+## Read the blog
+## It is highly advisable for you, to thoroughly go through the [blog](https://rudrodip.vercel.app/blog/harmonic-oscillation-analyzer). Doing so will greatly facilitate the project setup process and enable a better grasp of the user interface (UI). Your understanding of this section is pivotal in ensuring the efficient configuration of the project and in comprehending the UI.
+
 ## Table of Contents
 
 - [Computer Vision-Based Harmonic Oscillation Analysis](#computer-vision-based-harmonic-oscillation-analysis)
   - [Overview](#overview)
+  - [Read the blog](#read-the-blog)
+  - [It is highly advisable for you, to thoroughly go through the blog. Doing so will greatly facilitate the project setup process and enable a better grasp of the user interface (UI). Your understanding of this section is pivotal in ensuring the efficient configuration of the project and in comprehending the UI.](#it-is-highly-advisable-for-you-to-thoroughly-go-through-the-blog-doing-so-will-greatly-facilitate-the-project-setup-process-and-enable-a-better-grasp-of-the-user-interface-ui-your-understanding-of-this-section-is-pivotal-in-ensuring-the-efficient-configuration-of-the-project-and-in-comprehending-the-ui)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Setting Up a Virtual Environment](#setting-up-a-virtual-environment)
@@ -16,6 +21,8 @@ This Python project is designed to analyze the harmonic oscillation of an object
   - [Object Detection](#object-detection)
   - [Data Collection](#data-collection)
   - [Curve Fitting](#curve-fitting)
+    - [Equation for the under-damped oscillation function](#equation-for-the-under-damped-oscillation-function)
+    - [Equation for circle residual](#equation-for-circle-residual)
   - [Parameter Estimation](#parameter-estimation)
   - [GUI Integration](#gui-integration)
   - [Visualization](#visualization)
@@ -113,14 +120,14 @@ The application captures video frames, detects the object in each frame, and col
 
 SciPy's curve fitting functions are used to fit the collected data to a damped oscillation function. This step helps extract parameters like amplitude, frequency, damping coefficient, phase and a constant.
 
-Equation for the under-damped oscillation function
+### Equation for the under-damped oscillation function
 
 $$
-x(t) = A e^{-\gamma t} \cos(2\pi f t + \phi) + C
+x(t) = A e^{-\gamma t} \cos(\omega t + \phi) + C
 $$
 
 ```py
-def underdamped_harmonic_oscillator(t, A, gamma, f, phi, C):
+def underdamped_harmonic_oscillator(t, A, gamma, w, phi, C):
     """
     Calculate the position of an underdamped harmonic oscillator at time t.
 
@@ -135,7 +142,7 @@ def underdamped_harmonic_oscillator(t, A, gamma, f, phi, C):
     Returns:
         Position values at the given time points.
     """
-    return A * np.exp(-gamma * t) * np.cos(2 * np.pi * f * t + phi) + C
+    return A * np.exp(-gamma * t) * np.cos(w * t + phi) + C
 ```
 
 Equation for decaying oscillation component
@@ -161,28 +168,75 @@ def upper_decaying_component_curve(t, A, gamma, C):
     return C + A * np.exp(-gamma * t)
 ```
 
-Equation for circle residual
+### Equation for circle residual
 
 $$
-\sqrt{(x - a)^2 + (y - b)^2} - r
+\text{Rotated Circle Residuals: } \text{predicted}_y = (x_{\text{rotated}}^2 + y_{\text{rotated}}^2) - r^2
+$$
+
+Where:
+
+- $$ \text{predicted}_y $$ represents the predicted residuals.
+- $$ x_{\text{rotated}} $$ and $$ y_{\text{rotated}} $$ are the transformed coordinates based on the specified center $$a$$, $$b$$ and rotation $$ \theta $$.
+- $$ r $$ is the radius of the circle.
+- $$ \theta $$ is the angle of rotation of the circle (in radians).
+- $$ x $$ and $$ y $$ are the arrays containing the x and y coordinates of data points.
+
+This equation calculates the residuals for fitting a rotated circle to a set of data points, taking into account the transformation of coordinates based on the specified center and rotation.
+
+The rotation of coordinates in the `rotated_circle_residuals` function is based on the following mathematical transformations:
+
+1. If $$\theta$$ (the angle of rotation) is approximately zero:
+
+$$
+\begin{align*}
+x_{\text{rotated}} &= x - a \\
+y_{\text{rotated}} &= y - b
+\end{align*}
+$$
+
+2. If $$\theta$$ is not zero:
+
+$$
+\begin{align*}
+x_{\text{rotated}} &= (x - a) \cdot \cos(\theta) + (y - b) \cdot \sin(\theta) \\
+y_{\text{rotated}} &= (y - b) \cdot \cos(\theta) - (x - a) \cdot \sin(\theta)
+\end{align*}
 $$
 
 ```py
-def circle_residuals(params, x, y):
+def rotated_circle_residuals(params, x, y):
     """
-    Calculate the residuals for circle fitting.
-
-    Args:
-        params: Parameters of the circle (a, b, r).
-        x: x-coordinates of data points.
-        y: y-coordinates of data points.
+    Parameters:
+        params (list): A list containing the parameters of the rotated circle.
+            params[0] (float): 'a' - X-coordinate of the circle's center.
+            params[1] (float): 'b' - Y-coordinate of the circle's center.
+            params[2] (float): 'r' - Radius of the circle.
+            params[3] (float): 'theta' - Angle of rotation of the circle (in radians).
+        x (array): Array containing the x-coordinates of data points.
+        y (array): Array containing the y-coordinates of data points.
 
     Returns:
-        Residuals indicating the difference between the data points and the circle model.
-    """
-    a, b, r = params
-    return np.sqrt((x - a) ** 2 + (y - b) ** 2) - r
+        predicted_y (array): Array of residuals, i.e., the differences between
+        the observed data points and the corresponding points on the rotated circle.
 
+    Notes:
+        This function calculates the residuals for fitting a rotated circle to a set of data points.
+        It transforms the data points based on the specified center ('a', 'b') and rotation ('theta')
+        and computes the differences between the observed 'y' values and the predicted 'y' values
+        on the rotated circle.
+    """
+    a, b, r, theta = params  # Extract the parameters
+
+    if np.isclose(theta, 0, atol=1e-6):
+        x_rotated = x - a
+        y_rotated = y - b
+    else:
+        x_rotated = (x - a) * np.cos(theta) + (y - b) * np.sin(theta)
+        y_rotated = (y - b) * np.cos(theta) - (x - a) * np.sin(theta)
+
+    predicted_y = x_rotated**2 + y_rotated**2 - r**2  # Calculate residuals based on the rotated circle
+    return predicted_y
 ```
 
 ## Parameter Estimation

@@ -148,7 +148,6 @@ class VideoThread(QThread):
         fitted_a, fitted_b, fitted_r, _ = self.circle_params
 
         pivot_point = (int(fitted_a), int(fitted_b))
-        mean_point = self.params['mean_point']
 
         # string line
         cv2.line(frame, pivot_point, (cx, cy), WHITE, 2)

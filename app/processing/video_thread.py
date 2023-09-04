@@ -126,12 +126,12 @@ class VideoThread(QThread):
                 x_transformed, _ = rotate_opencv_point(
                     cx, cy, fitted_a, fitted_b, self.params['angle_rad'], self.height
                 )
+                self.draw_param(frame, (cx, cy))
                 if frame_number % 10 == 0:
                     # emit signals
                     self.new_contour_signal.emit(frame_number, x_transformed)
 
             frame_number += 1
-            self.draw_param(frame, (cx, cy))
 
             if self.display_option == "Mask":
                 self.change_pixmap_signal.emit(mask)

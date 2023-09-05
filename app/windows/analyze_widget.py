@@ -53,6 +53,7 @@ class AnalyzeWidget(QWidget):
         self.center_value_label = QLabel("(0, 0) pixel")
         self.length_value_label = QLabel("0 pixel")
         self.radius_value_label = QLabel("0 m")
+        self.omega_nought_value_label = QLabel("0")
         self.length_pivot_to_center_value_label = QLabel("0 m")
         self.length_pivot_to_surface_value_label = QLabel("0 m")
         self.angle_rad_value_label = QLabel("0 rad")
@@ -78,16 +79,18 @@ class AnalyzeWidget(QWidget):
         layout.addWidget(self.center_value_label, 0, 3)
         layout.addWidget(QLabel("Length (pixel): "), 1, 2)
         layout.addWidget(self.length_value_label, 1, 3)
-        layout.addWidget(QLabel("Radius (bob)): "), 2, 2)
+        layout.addWidget(QLabel("Radius (bob): "), 2, 2)
         layout.addWidget(self.radius_value_label, 2, 3)
-        layout.addWidget(QLabel("Length (pivot to center): "), 3, 2)
-        layout.addWidget(self.length_pivot_to_center_value_label, 3, 3)
-        layout.addWidget(QLabel("Length (pivot to sur): "), 4, 2)
-        layout.addWidget(self.length_pivot_to_surface_value_label, 4, 3)
-        layout.addWidget(QLabel("Angle (rad): "), 0, 4)
-        layout.addWidget(self.angle_rad_value_label, 0, 5)
-        layout.addWidget(QLabel("Angle (deg): "), 1, 4)
-        layout.addWidget(self.angle_deg_value_label, 1, 5)
+        layout.addWidget(QLabel("ω_0: "), 3, 2)
+        layout.addWidget(self.omega_nought_value_label, 3, 3)
+        layout.addWidget(QLabel("Length (pivot to center): "), 4, 2)
+        layout.addWidget(self.length_pivot_to_center_value_label, 4, 3)
+        layout.addWidget(QLabel("Length (pivot to sur): "), 0, 4)
+        layout.addWidget(self.length_pivot_to_surface_value_label, 0, 5)
+        layout.addWidget(QLabel("Angle (rad): "), 1, 4)
+        layout.addWidget(self.angle_rad_value_label, 1, 5)
+        layout.addWidget(QLabel("Angle (deg): "), 2, 4)
+        layout.addWidget(self.angle_deg_value_label, 2, 5)
 
         self.setLayout(layout)
 
@@ -103,7 +106,9 @@ class AnalyzeWidget(QWidget):
         for i, value_label in enumerate(self.param_value_labels):
             value_label.setText(f"{params[i]:.3f}")
 
-        length = 9.8 / (params[2]) ** 2
+        omega, damp_coff = params[2], params[1]
+        omega_0 = math.sqrt(omega ** 2 + damp_coff ** 2)
+        length = 9.8 / (omega_0) ** 2
         self.length_pivot_to_center_value_label.setText(f"{length:.4f} m")
 
         ratio = (
@@ -112,6 +117,7 @@ class AnalyzeWidget(QWidget):
             else None
         )
         length_pivot_to_sur = length - (length / ratio)
+        self.omega_nought_value_label.setText(f"{omega_0:.4f}")
         self.length_pivot_to_surface_value_label.setText(f"{length_pivot_to_sur:.4f} m")
         self.radius_value_label.setText(f"{length - length_pivot_to_sur:.4f} m")
 

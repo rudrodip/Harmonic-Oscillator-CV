@@ -198,9 +198,6 @@ def rotate_opencv_point(x, y, pivot_x, pivot_y, angle_radians, window_height):
 
     # Adjust the pivot point's y-coordinate to match the top-left origin
     pivot_y = window_height - pivot_y
-
-    # Reverse the sign of the angle for clockwise rotation (if necessary)
-    # If you're working in a counterclockwise rotation system, you can skip this step
     angle_radians = -angle_radians
 
     # Calculate relative coordinates
@@ -244,3 +241,6 @@ def opencv_to_cartesian(opencv_coords, frame_height):
     x_cartesian = x_opencv
     y_cartesian = frame_height - y_opencv
     return x_cartesian, y_cartesian
+
+def dist(x1, y1, x2, y2):
+    return np.sqrt((x1-x2)**2 + (y1-y2)**2)

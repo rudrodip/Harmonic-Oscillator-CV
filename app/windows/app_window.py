@@ -59,7 +59,7 @@ class AppWindow(QWidget):
         # Set up the main layout
         self.create_layout()
         self.setFixedWidth(self.disply_width)
-        self.showMaximized()
+        # self.showMaximized()
 
     def create_buttons(self):
         # "Run" button

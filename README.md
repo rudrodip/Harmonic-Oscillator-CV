@@ -4,6 +4,12 @@
 
 This Python project is designed to analyze the harmonic oscillation of an object using computer vision techniques. It leverages various libraries, including OpenCV for video feed processing, SciPy for data analysis, NumPy for numerical operations, and PyQt5 for creating a graphical user interface (GUI). The project detects and tracks an object in a video feed, extracts its motion data, fits it to a damped oscillation function, and calculates physical parameters such as pendulum length and pivot point location.
 
+[![Harmonic Oscillator Analyzer](https://img.youtube.com/vi/dalsCsHtreU/0.jpg)](https://www.youtube.com/watch?v=dalsCsHtreU&t=1220s)
+
+### Click on the image to watch a review of the project
+
+---
+
 ## Read the blog
 ## It is highly advisable for you, to thoroughly go through the [blog](https://rudrodip.vercel.app/blog/harmonic-oscillation-analyzer). Doing so will greatly facilitate the project setup process and enable a better grasp of the user interface (UI). Your understanding of this section is pivotal in ensuring the efficient configuration of the project and in comprehending the UI.
 
@@ -11,6 +17,7 @@ This Python project is designed to analyze the harmonic oscillation of an object
 
 - [Computer Vision-Based Harmonic Oscillation Analysis](#computer-vision-based-harmonic-oscillation-analysis)
   - [Overview](#overview)
+    - [Click on the image to watch a review of the project](#click-on-the-image-to-watch-a-review-of-the-project)
   - [Read the blog](#read-the-blog)
   - [It is highly advisable for you, to thoroughly go through the blog. Doing so will greatly facilitate the project setup process and enable a better grasp of the user interface (UI). Your understanding of this section is pivotal in ensuring the efficient configuration of the project and in comprehending the UI.](#it-is-highly-advisable-for-you-to-thoroughly-go-through-the-blog-doing-so-will-greatly-facilitate-the-project-setup-process-and-enable-a-better-grasp-of-the-user-interface-ui-your-understanding-of-this-section-is-pivotal-in-ensuring-the-efficient-configuration-of-the-project-and-in-comprehending-the-ui)
   - [Table of Contents](#table-of-contents)

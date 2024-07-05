@@ -178,22 +178,14 @@ def upper_decaying_component_curve(t, A, gamma, C):
 ### Equation for circle residual
 
 $$
-\text{Rotated Circle Residuals: } \text{predicted}_y = (x_{\text{rotated}}^2 + y_{\text{rotated}}^2) - r^2
+predicted_y = (x_{\text{rotated}}^2 + y_{\text{rotated}}^2) - r^2
 $$
-
-Where:
-
-- $$ \text{predicted}_y $$ represents the predicted residuals.
-- $$ x_{\text{rotated}} $$ and $$ y_{\text{rotated}} $$ are the transformed coordinates based on the specified center $$a$$, $$b$$ and rotation $$ \theta $$.
-- $$ r $$ is the radius of the circle.
-- $$ \theta $$ is the angle of rotation of the circle (in radians).
-- $$ x $$ and $$ y $$ are the arrays containing the x and y coordinates of data points.
 
 This equation calculates the residuals for fitting a rotated circle to a set of data points, taking into account the transformation of coordinates based on the specified center and rotation.
 
 The rotation of coordinates in the `rotated_circle_residuals` function is based on the following mathematical transformations:
 
-1. If $$\theta$$ (the angle of rotation) is approximately zero:
+1. If $\theta$ (the angle of rotation) is approximately zero:
 
 $$
 \begin{align*}
@@ -202,7 +194,7 @@ y_{\text{rotated}} &= y - b
 \end{align*}
 $$
 
-2. If $$\theta$$ is not zero:
+2. If $\theta$ is not zero:
 
 $$
 \begin{align*}

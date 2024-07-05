@@ -127,7 +127,7 @@ class VideoThread(QThread):
                 self.data_points = np.append(self.data_points,[[cx, cy, count]],axis=0,)
 
             count += 1
-            self.processing_signal.emit(int((count/500) * 100))
+            self.processing_signal.emit(int((count/2000) * 100))
 
         self.calculate_static_params()
         self.params["radius_bob"] = radius_bob
